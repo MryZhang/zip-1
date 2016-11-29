@@ -27,3 +27,7 @@
 *.exe
 *.out
 *.app
+
+# reference ignore
+zsl.sh
+devenv.mk
