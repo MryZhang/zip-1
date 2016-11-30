@@ -1,27 +1,29 @@
 include devenv.mk  # from https://github.com/wordworld/common/make
 
-DEFINES += -D_DEBUG 
+DEFINES	+= -D_DEBUG 
 
-CFLAGS += -Wall 
+CFLAGS	+= -Wall -g -pthread
 
-LDFLAGS +=
+LDFLAGS	+= 
 
-INCLUDES += -I.
+INCLUDES += -I$(DIR_DEVLIBS)/include
 
+vpath %.a $(DIR_DEVLIBS)/lib
 
-OBJS = *.obj
-EXE = fzip
+OBJS	= fzip.o
+EXE	= fzip
+
 
 all:$(EXE)
 
-$(EXE):$(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS)
+$(EXE):$(OBJS) -lz
+	$(LD) $(LDFLAGS) $^ -o $@ 
 
-.C.O:
+.C.o:
 	$(CC) -c $(DEFINES) $(INCLUDES) $(CFLAGS) $< -o $@
 
-.cpp.o:
-	$(CC) -c $(DEFINES) $(INCLUDES) $(CFLAGS) $< -o $@
+.cpp.o : fzip.cpp
+	$(CPP) -c $(DEFINES) $(INCLUDES) $(CFLAGS) $< -o $@
 
 clean:
 	rm -f $(OBJS)
