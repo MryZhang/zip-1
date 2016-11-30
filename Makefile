@@ -10,21 +10,25 @@ INCLUDES += -I$(DIR_DEVLIBS)/include
 
 vpath %.a $(DIR_DEVLIBS)/lib
 
-OBJS	= fzip.o
-EXE	= fzip
-
+SRC	= zdemo.cpp
+MAIN	= fzip.cpp
+OBJS	= $(MAIN:.cpp=.o) $(SRC:.cpp=.o)
+EXE	= $(MAIN:.cpp=.exe)
 
 all:$(EXE)
 
 $(EXE):$(OBJS) -lz
 	$(LD) $(LDFLAGS) $^ -o $@ 
 
-.C.o:
+.c.o:
 	$(CC) -c $(DEFINES) $(INCLUDES) $(CFLAGS) $< -o $@
 
-.cpp.o : fzip.cpp
+.cpp.o:
 	$(CPP) -c $(DEFINES) $(INCLUDES) $(CFLAGS) $< -o $@
 
 clean:
 	rm -f $(OBJS)
 	rm -f $(EXE)
+
+run:
+	./$(EXE)
