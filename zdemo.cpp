@@ -8,7 +8,7 @@
  * @date	2016-11-30
  * @version	0.1.0
 *************************************************************/
-#include <stdio.h>
+#include "zdemo.h"
 #include <string.h>
 #include <assert.h>
 #include <zlib.h>

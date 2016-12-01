@@ -8,8 +8,7 @@
  * @date	2016-11-30
  * @version	0.1.0
 *************************************************************/
-
-struct FILE;
+#include <stdio.h>
 
 // 压缩
 int def(FILE *source, FILE *dest, int level = 6);
@@ -19,4 +18,3 @@ int inf(FILE *source, FILE *dest);
 
 // 报错
 void zerr(int ret);
-
