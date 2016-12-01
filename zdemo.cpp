@@ -181,7 +181,6 @@ int inf(FILE *source, FILE *dest)
 
 void zerr(int ret)
 {
-	fputs("zdemo: ", stderr);
 	switch (ret)
 	{
 		case Z_ERRNO:
@@ -198,5 +197,7 @@ void zerr(int ret)
 			break;
 		case Z_VERSION_ERROR:
 			fputs("zlib version mismatch!\n", stderr);
+		default:
+			fprintf(stderr, "zlib unknown error, error code = %d.\n", ret);
 	}
 }

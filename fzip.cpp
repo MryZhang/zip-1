@@ -14,7 +14,7 @@
 
 typedef std::function<int(FILE*,FILE*)> ZipFunc;
 
-bool Zip(const char * src, const char * dst, ZipFunc zip)
+int Zip(const char * src, const char * dst, ZipFunc zip)
 {
 	bool ret = false;
 	FILE	* source, * dest;
@@ -24,7 +24,7 @@ bool Zip(const char * src, const char * dst, ZipFunc zip)
 		dest =fopen( dst, "wb" );
 		if( dest )
 		{
-			ret = (0 == zip( source, dest ));
+			ret = zip( source, dest );
 			fclose( dest );
 		}
 		fclose( source );
@@ -43,19 +43,21 @@ void fzip(int argc, char * argv[])
 			fputs("give source file name & dest zip file name to compress; source zip file name to uncompress!\n", stderr);
 			break;
 		case 2:
-			fputs("1 parameter", stderr);
 			strcpy(filename, argv[1]);
 			pExt = ( strchr(filename, '.') );
 			strcpy(pExt, ".zip");
-			printf("filename=%s.\n", filename);
 			err = Zip( argv[1], filename, [](FILE * src, FILE * dst){ return def(src, dst); } );
 			if( err )
 				zerr(err);
+			else
+				fprintf(stderr, "compress %s to %s success.\n", argv[1], filename);
 			break;
 		case 3:
 			err = Zip( argv[1], argv[2], inf );
 			if( err )
 				zerr(err);
+			else
+				fprintf(stderr, "uncompress to %s from %s success.\n", argv[2], argv[1]);
 			break;
 		default:
 			fputs("too many parameters given!\n", stderr);
@@ -65,7 +67,6 @@ void fzip(int argc, char * argv[])
 
 int main(int argc, char * argv[])
 {
-	fputs("hello", stderr);
 	fzip(argc, argv);
 	return 0;
 }
