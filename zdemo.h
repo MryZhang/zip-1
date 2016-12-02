@@ -11,10 +11,12 @@
 #include <stdio.h>
 
 // 压缩
-int def(FILE *source, FILE *dest, int level = 6);
+int CompressFile(const char * srcFile, const char * zipFile=0, int level=-1);
 
 // 解压
-int inf(FILE *source, FILE *dest);
+int DecompressFile(const char * zipFile, const char * dstFile = 0);
 
 // 报错
 void zerr(int ret);
+
+

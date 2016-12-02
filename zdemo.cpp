@@ -12,6 +12,9 @@
 #include <string.h>
 #include <assert.h>
 #include <zlib.h>
+#include <functional>
+typedef std::function<int(FILE*,FILE*)> ZipFunc;
+#define CHUNK 262144 // 256k ( 64K 128K 256K )
 
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 	#include <fcntl.h>
@@ -20,8 +23,6 @@
 #else
 	#define SET_BINARY_MODE(file)
 #endif
-
-#define CHUNK 262144 // 256k ( 64K 128K 256K )
 
 /**
  * @brief	压缩source文件至其文件尾标志EOF，输出到压缩文件dest。
@@ -200,4 +201,52 @@ void zerr(int ret)
 		default:
 			fprintf(stderr, "zlib unknown error, error code = %d.\n", ret);
 	}
+}
+
+
+int Zip(const char * src, const char * dst, ZipFunc zip)
+{
+	bool ret = false;
+	FILE	* source, * dest;
+	source = fopen( src, "rb" );
+	if( source )
+	{
+		dest =fopen( dst, "wb" );
+		if( dest )
+		{
+			ret = zip( source, dest );
+			fclose( dest );
+		}
+		fclose( source );
+	}
+	return ret;
+}
+
+int CompressFile(const char * srcFile, const char * zipFile, int level)
+{
+	char filename[FILENAME_MAX]={0}, *pName=0;
+	if( ! zipFile )
+	{
+		strcpy(filename, srcFile);
+		pName = ( strchr(filename, '.') );
+		if( ! pName )
+			pName = filename + strlen(filename);
+		strcpy(pName, ".zip");
+		zipFile = filename;
+	}
+	return Zip( srcFile, zipFile, [ level ] (FILE * src, FILE * dst) { return def(src, dst, level); } );
+}
+
+int DecompressFile(const char * zipFile, const char * dstFile)
+{
+	char filename[FILENAME_MAX]={0}, *pName=0;
+	if( ! dstFile )
+	{
+		strcpy(filename, zipFile);
+		pName = ( strchr(filename, '.') );
+		if( pName )
+			*pName = 0;
+		dstFile = pName;
+	}
+	return Zip( zipFile, dstFile, inf );
 }
