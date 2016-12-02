@@ -13,16 +13,19 @@
 #include <assert.h>
 #include <zlib.h>
 #include <functional>
+
+namespace FZip {
+
 typedef std::function<int(FILE*,FILE*)> ZipFunc;
 #define CHUNK 262144 // 256k ( 64K 128K 256K )
 
-#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
-	#include <fcntl.h>
-	#include <io.h>
-	#define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
-#else
-	#define SET_BINARY_MODE(file)
-#endif
+// #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+	// #include <fcntl.h>
+	// #include <io.h>
+	// #define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+// #else
+	// #define SET_BINARY_MODE(file)
+// #endif
 
 /**
  * @brief	压缩source文件至其文件尾标志EOF，输出到压缩文件dest。
@@ -180,30 +183,6 @@ int inf(FILE *source, FILE *dest)
 	return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
 
-void zerr(int ret)
-{
-	switch (ret)
-	{
-		case Z_ERRNO:
-			fputs("error I/O\n", stderr);
-			break;
-		case Z_STREAM_ERROR:
-			fputs("invalid compression level\n", stderr);
-			break;
-		case Z_DATA_ERROR:
-			fputs("invalid or incomplete deflate data\n", stderr);
-			break;
-		case Z_MEM_ERROR:
-			fputs("out of memory\n", stderr);
-			break;
-		case Z_VERSION_ERROR:
-			fputs("zlib version mismatch!\n", stderr);
-		default:
-			fprintf(stderr, "zlib unknown error, error code = %d.\n", ret);
-	}
-}
-
-
 int Zip(const char * src, const char * dst, ZipFunc zip)
 {
 	bool ret = false;
@@ -222,6 +201,32 @@ int Zip(const char * src, const char * dst, ZipFunc zip)
 	return ret;
 }
 
+
+void zerr(int ret)
+{
+	switch (ret)
+	{
+		case Z_ERRNO:
+			fputs("zlib error: I/O\n", stderr);
+			break;
+		case Z_STREAM_ERROR:
+			fputs("zlib error: invalid compression level\n", stderr);
+			break;
+		case Z_DATA_ERROR:
+			fputs("zlib error: invalid or incomplete deflate data\n", stderr);
+			break;
+		case Z_MEM_ERROR:
+			fputs("zlib error: out of memory\n", stderr);
+			break;
+		case Z_VERSION_ERROR:
+			fputs("zlib error: version mismatch!\n", stderr);
+		default:
+			fprintf(stderr, "zlib unknown error: error code = %d.\n", ret);
+	}
+}
+
+
+// 压缩文件
 int CompressFile(const char * srcFile, const char * zipFile, int level)
 {
 	char filename[FILENAME_MAX]={0}, *pName=0;
@@ -237,6 +242,7 @@ int CompressFile(const char * srcFile, const char * zipFile, int level)
 	return Zip( srcFile, zipFile, [ level ] (FILE * src, FILE * dst) { return def(src, dst, level); } );
 }
 
+// 解压文件
 int DecompressFile(const char * zipFile, const char * dstFile)
 {
 	char filename[FILENAME_MAX]={0}, *pName=0;
@@ -250,3 +256,5 @@ int DecompressFile(const char * zipFile, const char * dstFile)
 	}
 	return Zip( zipFile, dstFile, inf );
 }
+
+}; // namespace FZip

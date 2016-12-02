@@ -10,13 +10,14 @@
 *************************************************************/
 #include <stdio.h>
 
-// 压缩
+namespace FZip{
+// 压缩文件
 int CompressFile(const char * srcFile, const char * zipFile=0, int level=-1);
 
-// 解压
+// 解压文件
 int DecompressFile(const char * zipFile, const char * dstFile = 0);
 
-// 报错
+// 报错信息
 void zerr(int ret);
 
-
+}; // namespace Fzip
