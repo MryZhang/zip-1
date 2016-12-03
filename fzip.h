@@ -1,8 +1,8 @@
 /**************************************************************
- * @brief	zlib 提供的例子
+ * @brief	zlib 压缩解压程序
  * 
  * 
- * @file	zdemo.h
+ * @file	fzip.h
  * @path	prj/zip
  * @author	fstone.zh@foxmail.com
  * @date	2016-11-30

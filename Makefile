@@ -10,8 +10,8 @@ INCLUDES += -I$(DIR_DEVLIBS)/include
 
 vpath %.a $(DIR_DEVLIBS)/lib
 
-SRC	= zdemo.cpp
-MAIN	= fzip.cpp
+SRC	= main.cpp
+MAIN	= fzip.cpp 
 OBJS	= $(MAIN:.cpp=.o) $(SRC:.cpp=.o)
 EXE	= $(MAIN:.cpp=.exe)
 
