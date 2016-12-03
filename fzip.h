@@ -3,10 +3,10 @@
  * 
  * 
  * @file	fzip.h
- * @path	prj/zip
  * @author	fstone.zh@foxmail.com
- * @date	2016-11-30
+ * @date	2016-12-03
  * @version	0.1.0
+ * @see		http://confluence.oa.zulong.com/pages/viewpage.action?pageId=6526298
 *************************************************************/
 #include <stdio.h>
 
@@ -15,12 +15,12 @@ namespace FZip{
 #define FZIP_EXT	".fz"
 
 // 压缩文件
-int CompressFile(const char * srcFile, const char * zipFile=0, int level=-1);
+int CompressFile(const char * srcFile, const char * zipFile=0, bool overwrite = false, int level=-1);
 
 // 解压文件
-int DecompressFile(const char * zipFile, const char * dstFile = 0);
+int DecompressFile(const char * zipFile, const char * dstFile = 0, bool overwrite = false);
 
-// 报错信息
-void zerr(int ret);
+// 错误号意义
+void zerr(int errorCode);
 
-}; // namespace Fzip
+}; // namespace FZip

@@ -3,10 +3,10 @@
  * 
  * 
  * @file	fzip.cpp
- * @path	prj/zip
  * @author	fstone.zh@foxmail.com
- * @date	2016-11-30
+ * @date	2016-12-03
  * @version	0.1.0
+ * @see		http://confluence.oa.zulong.com/pages/viewpage.action?pageId=6526298
 *************************************************************/
 #include "fzip.h"
 #include <string.h>
@@ -16,16 +16,7 @@
 
 namespace FZip {
 
-typedef std::function<int(FILE*,FILE*)> ZipFunc;
 #define CHUNK 262144 // 256k ( 64K 128K 256K )
-
-// #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
-	// #include <fcntl.h>
-	// #include <io.h>
-	// #define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
-// #else
-	// #define SET_BINARY_MODE(file)
-// #endif
 
 /**
  * @brief	压缩source文件至其文件尾标志EOF，输出到压缩文件dest。
@@ -183,28 +174,16 @@ int inf(FILE *source, FILE *dest)
 	return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
 
-int Zip(const char * src, const char * dst, ZipFunc zip)
-{
-	bool ret = false;
-	FILE	* source, * dest;
-	source = fopen( src, "rb" );
-	if( source )
-	{
-		dest =fopen( dst, "wb" );
-		if( dest )
-		{
-			ret = zip( source, dest );
-			fclose( dest );
-		}
-		fclose( source );
-	}
-	return ret;
-}
+// 自定义错误号
+enum FZ_ERROR_NUM {
+	FZ_DFT_ERROR = 1024,
+	FZ_FILE_EXIST
+};
 
-
-void zerr(int ret)
+// 查询错误信息
+void zerr(int errorCode)
 {
-	switch (ret)
+	switch (errorCode)
 	{
 		case Z_ERRNO:
 			fputs("zlib error: I/O\n", stderr);
@@ -219,15 +198,62 @@ void zerr(int ret)
 			fputs("zlib error: out of memory\n", stderr);
 			break;
 		case Z_VERSION_ERROR:
-			fputs("zlib error: version mismatch!\n", stderr);
+			fputs("zlib error: version mismatch between zlib.h and libz.a\n", stderr);
+			break;
+		case FZ_FILE_EXIST:
+			fputs("fzip error: file already exists\n", stderr);
+			break;
 		default:
-			fprintf(stderr, "zlib unknown error: error code = %d.\n", ret);
+			fprintf(stderr, "zlib unknown error: error code = %d\n", errorCode);
 	}
 }
 
 
-// 压缩文件
-int CompressFile(const char * srcFile, const char * zipFile, int level)
+// 压缩/解压一致函数
+typedef std::function<int(FILE*,FILE*)> ZipFunc;
+
+// 压缩/解压一致流程
+int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite = false)
+{
+	int ret = Z_DATA_ERROR;
+	FILE	* source, * dest;
+	source = fopen( src, "rb" );
+	if( source )
+	{
+		// 文件已经存在
+		if( (dest = fopen( dst, "r" )) )
+		{
+			fclose( dest );
+			ret = FZ_FILE_EXIST;
+		}
+
+		// 覆盖 或 文件不存在
+		if( overwrite || FZ_FILE_EXIST != ret )
+		{
+			dest =fopen( dst, "wb" );
+			if( dest )
+			{
+				ret = zip( source, dest );
+				fclose( dest );
+			}
+		}
+		fclose( source );
+	}
+	return ret;
+}
+
+
+/**
+ * @brief	压缩文件
+ * 
+ * 
+ * @param	srcFile	被压缩的源文件名
+ * @param	zipFile	压缩后得到的压缩文件名,缺省为源文件名+.fz
+ * @param	overwrite 覆盖已存在文件标志, 缺省不覆盖
+ * @param	level	压缩级别( 1~9,默认-1表示取zlib推荐值。level越大，压缩比越大，速度越慢 )
+ * @return	0 成功； 非零错误号，可调用 zerr() 查询错误信息
+*/
+int CompressFile(const char * srcFile, const char * zipFile, bool overwrite, int level)
 {
 	char filename[FILENAME_MAX]={0}, *pName=0;
 	if( ! zipFile )
@@ -237,11 +263,19 @@ int CompressFile(const char * srcFile, const char * zipFile, int level)
 		strcpy(pName, FZIP_EXT);
 		zipFile = filename;
 	}
-	return Zip( srcFile, zipFile, [ level ] (FILE * src, FILE * dst) { return def(src, dst, level); } );
+	return Zip( srcFile, zipFile, [ level ] (FILE * src, FILE * dst) { return def(src, dst, level); }, overwrite );
 }
 
-// 解压文件
-int DecompressFile(const char * zipFile, const char * dstFile)
+/**
+ * @brief	解压文件
+ * 
+ * 
+ * @param	zipFile	压缩文件名
+ * @param	dstFile	解压后的文件名，缺省为去掉压缩文件名的.fz后缀后得到的文件名
+ * @param	overwrite 覆盖已存在文件标志, 缺省不覆盖
+ * @return	0 成功；非零错误号可调用 zerr() 查询错误信息
+*/
+int DecompressFile(const char * zipFile, const char * dstFile, bool overwrite)
 {
 	char filename[FILENAME_MAX]={0}, *pName=0;
 	if( ! dstFile )
@@ -252,7 +286,7 @@ int DecompressFile(const char * zipFile, const char * dstFile)
 			*pName = 0;
 		dstFile = filename;
 	}
-	return Zip( zipFile, dstFile, inf );
+	return Zip( zipFile, dstFile, inf, overwrite );
 }
 
 }; // namespace FZip
