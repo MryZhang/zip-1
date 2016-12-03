@@ -8,6 +8,7 @@
  * @version	0.1.0
  * @see		http://confluence.oa.zulong.com/pages/viewpage.action?pageId=6526298
 *************************************************************/
+#pragma once
 #include <stdio.h>
 
 namespace FZip{

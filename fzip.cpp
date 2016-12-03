@@ -213,7 +213,7 @@ void zerr(int errorCode)
 typedef std::function<int(FILE*,FILE*)> ZipFunc;
 
 // 压缩/解压一致流程
-int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite = false)
+int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite)
 {
 	int ret = Z_DATA_ERROR;
 	FILE	* source, * dest;
