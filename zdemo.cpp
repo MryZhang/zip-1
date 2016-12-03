@@ -233,10 +233,8 @@ int CompressFile(const char * srcFile, const char * zipFile, int level)
 	if( ! zipFile )
 	{
 		strcpy(filename, srcFile);
-		pName = ( strchr(filename, '.') );
-		if( ! pName )
-			pName = filename + strlen(filename);
-		strcpy(pName, ".zip");
+		pName = filename + strlen(filename);
+		strcpy(pName, FZIP_EXT);
 		zipFile = filename;
 	}
 	return Zip( srcFile, zipFile, [ level ] (FILE * src, FILE * dst) { return def(src, dst, level); } );
@@ -249,7 +247,7 @@ int DecompressFile(const char * zipFile, const char * dstFile)
 	if( ! dstFile )
 	{
 		strcpy(filename, zipFile);
-		pName = ( strchr(filename, '.') );
+		pName = ( strstr(filename, FZIP_EXT) );
 		if( pName )
 			*pName = 0;
 		dstFile = pName;

@@ -11,6 +11,9 @@
 #include <stdio.h>
 
 namespace FZip{
+
+#define FZIP_EXT	".fz"
+
 // 压缩文件
 int CompressFile(const char * srcFile, const char * zipFile=0, int level=-1);
 

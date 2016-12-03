@@ -27,8 +27,7 @@ $(EXE):$(OBJS) -lz
 	$(CPP) -c $(DEFINES) $(INCLUDES) $(CFLAGS) $< -o $@
 
 clean:
-	rm -f $(OBJS)
-	rm -f $(EXE)
+	rm -f $(OBJS) $(EXE) *.fz
 
 run:
 	./$(EXE)
