@@ -10,6 +10,8 @@
 #include "fzip.h"
 #include <unistd.h>
 #include <getopt.h>
+#include <stdlib.h>
+#include <sys/file.h>
 
 // 版本号 更新日期
 #define VERSION		"1.0"
@@ -102,8 +104,38 @@ void fzip(int argc, char * argv[],int level = -1)
 	}
 }
 
+void lock_test(int argc, char * argv[])
+{
+
+	const char * file = argv[1], * msg = argv[3];
+	// int fd = open(argv[1], O_RDWR);
+	int fd = 0;
+	// 如果文件不存在，则创建文件；
+	if( -1 == (fd = open(file, O_RDONLY|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR | S_IRGRP | S_IROTH)) )
+		fd = open(file, O_RDONLY);
+	printf("opened\n");
+	// 锁定文件成功
+	if( -1 != flock(fd, LOCK_EX) )
+	{
+		FILE * fp = 0;
+		if( (fp = fopen(file, "w")) )
+		{
+			fprintf(fp, "%s\n", msg);
+			printf("write ok\n");
+			fclose(fp);
+		}
+		else
+			printf("write failed\n");
+	}
+	else
+		printf("lock failed\n");
+	sleep(atoi(argv[2]));
+	close(fd);
+}
+
 int main(int argc, char * argv[])
 {
+	// lock_test();
 	fzip(argc, argv);
 	return 0;
 }

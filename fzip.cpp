@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <zlib.h>
 #include <functional>
+#include <sys/file.h>
 
 namespace FZip {
 
@@ -226,16 +227,25 @@ int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite)
 			fclose( dest );
 			ret = FZ_FILE_EXIST;
 		}
-
 		// 覆盖 或 文件不存在
 		if( overwrite || FZ_FILE_EXIST != ret )
 		{
-			dest =fopen( dst, "wb" );
-			if( dest )
+			int fd = -1;
+			// 如果文件不存在，则创建文件；
+			if( -1 == (fd = open(dst, O_RDONLY|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR | S_IRGRP | S_IROTH)) )
+				fd = open(dst, O_RDONLY);
+			// 请求独占文件锁(阻塞)，压缩/解压过程中，目标文件禁止读/写
+			if( -1 != flock(fd, LOCK_EX) )
 			{
-				ret = zip( source, dest );
-				fclose( dest );
+				dest =fopen( dst, "wb" );
+				if( dest )
+				{
+					ret = zip( source, dest );
+					fclose( dest );
+				}
 			}
+			// 释放锁
+			close(fd);
 		}
 		fclose( source );
 	}
