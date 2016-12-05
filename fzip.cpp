@@ -230,8 +230,8 @@ int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite)
 		// 覆盖 或 文件不存在
 		if( overwrite || FZ_FILE_EXIST != ret )
 		{
-			int fd = -1;
 			// 如果文件不存在，则创建文件；
+			int fd = -1;
 			if( -1 == (fd = open(dst, O_RDONLY|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR | S_IRGRP | S_IROTH)) )
 				fd = open(dst, O_RDONLY);
 			// 请求独占文件锁(阻塞)，压缩/解压过程中，目标文件禁止读/写
