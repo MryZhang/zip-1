@@ -198,7 +198,7 @@ int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite)
 		{
 			// 目标文件加锁（如果文件不存在，则创建文件）
 			Writer wr(dst);
-			// 请求独占文件锁(阻塞)，压缩/解压过程中，目标文件禁止读/写
+			// 请求独占文件锁(非阻塞)，压缩/解压过程中，目标文件禁止读/写
 			if( -1 != wr.Lock() )
 			{
 				dest =fopen( dst, "wb" );
@@ -207,11 +207,11 @@ int Zip(const char * src, const char * dst, ZipFunc zip, bool overwrite)
 					ret = zip( source, dest );
 					fclose( dest );
 				}
+				// 释放锁
+				wr.Unlock();
 			}
-			else
+			else // 加锁失败则返回错误，不进行压缩/解压
 				ret = FZ_FILE_LOCK;
-			// 释放锁
-			wr.Unlock();
 		}
 		fclose( source );
 	}
