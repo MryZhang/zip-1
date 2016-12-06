@@ -4,18 +4,16 @@
  * 
  * @file	main.cpp
  * @author	fstone.zh@foxmail.com
- * @date	2016-12-03
- * @version	0.1.0
+ * @date	2016-12-06
+ * @version	0.1.1
 *************************************************************/
 #include "fzip.h"
 #include <unistd.h>
 #include <getopt.h>
-#include <stdlib.h>
-#include <sys/file.h>
 
 // 版本号 更新日期
-#define VERSION		"1.0"
-#define LASTUPDATE	"2016-12-03"
+#define VERSION		"1.1"
+#define LASTUPDATE	"2016-12-06"
 
 // 帮助信息
 #define HELP_MSG 	"use fzip:\n\
@@ -25,12 +23,18 @@ options:\n\
 \t-r\t\tcompress file to file.fz by command:\n\
 \t\t\t\t$./fzip -r file [file.fz]\n\
 \t-f\t\tforced fzip, overwrite the existed file\n\
+\t-d\t\tlock [file] for [N] seconds.it's excluded lock when [-r] given as below, otherwise shared lock\n\
+\t\t\t\t$./fzip -r file -d N\n\
 \t-h, --help\tshow help message\n\
 \t-v, --version\tshow version informations"
 
 // 版本信息
 #define VERSION_MSG	"fzip version:\t%s\n\
 last update:\t%s\n", VERSION, LASTUPDATE
+
+// more
+#define MORE_INFO	printf("\tMore infor at http://confluence.oa.zulong.com/pages/viewpage.action?pageId=6526298\n")
+
 
 // fzip 命令行工具
 void fzip(int argc, char * argv[],int level = -1)
@@ -39,12 +43,13 @@ void fzip(int argc, char * argv[],int level = -1)
 	int	optCnt = 0, todo = DECOMPRESS;	// 缺省执行解压
 	bool	overwrite = false;		// 缺省不覆盖现存文件
 	char	opt = -1;
-	const char *	short_opts = "hvrf";
+	const char *	short_opts = "hvrfd:";
 	struct option	long_opts[] = {
 		"help",		no_argument,	0,	'h',
 		"version",	no_argument,	0,	'v'
 	};
-	while( -1 != (opt = getopt_long(argc, argv, short_opts, long_opts, 0 )) )
+	int optIdx = overwrite, delay = 0;
+	while( -1 != (opt = getopt_long(argc, argv, short_opts, long_opts, &optIdx )) )
 	{
 		optCnt++;
 		switch( opt )
@@ -57,26 +62,30 @@ void fzip(int argc, char * argv[],int level = -1)
 				break;
 			case 'h':
 				printf("%s\n", HELP_MSG);
+				MORE_INFO;
 				return;
 			case 'v':
 				printf(VERSION_MSG);
+				MORE_INFO;
 				return;
+			case 'd': // time delay
+				delay = atoi(optarg);
+				optCnt++;
+				break;
 			case '?': // 非法参数
 				break;
 		}
 	}
-	
-	const char * src=0, * dst=0;
 
+	const char * file1=0, * file2=0;
 	switch( argc - optCnt )
 	{
-		case 2: // src
-			src = argv[ optCnt + 1 ];
+		case 2: // fzip [options] file1
+			file1 = argv[ optCnt + 1 ];
 			break;
-		// 解压 -r 压缩文件 目标文件 ( fzip srcFileName.zip dstFileName )
-		case 3: // src dst
-			src = argv[ optCnt + 1 ];
-			dst = argv[ optCnt + 2 ];
+		case 3: // fzip [options] file1 file2
+			file1 = argv[ optCnt + 1 ];
+			file2 = argv[ optCnt + 2 ];
 			break;
 		default:
 			fputs("Try './fzip --help' for more information.\n", stderr);
@@ -87,67 +96,51 @@ void fzip(int argc, char * argv[],int level = -1)
 	// 压缩
 	if( COMPRESS == todo )
 	{
-		err = FZip::CompressFile( src, dst, overwrite);
-		if( err )
-			FZip::zerr(err);
+		if(0 < delay)
+		{
+			FZip::Writer wr(file1);
+			if( -1 == wr.Lock())
+				printf("write lock error\n");
+			else
+				printf("write lock ok\n");
+			sleep(delay);
+			wr.Unlock();
+		}
 		else
-			fprintf(stderr, "compress %s from %s success.\n", dst?dst:"", src); 
+		{
+			err = FZip::CompressFile( file1, file2, overwrite);
+			if( err )
+				FZip::zerr(err);
+			else
+				fprintf(stderr, "compress %s from %s success.\n", file2 ? file2 : "", file1); 
+		}
 	}
 	// 解压
 	else if( DECOMPRESS == todo )
 	{
-		err = FZip::DecompressFile( src, dst, overwrite );
-		if( err )
-			FZip::zerr(err);
+		if( 0 < delay )
+		{
+			FZip::Reader rd(file1);
+			if( -1 == rd.Lock() )
+				printf("read lock error\n");
+			else
+				printf("read lock ok\n");
+			sleep(delay);
+			rd.Unlock();
+		}
 		else
-			fprintf(stderr, "decompress %s from %s success.\n", dst?dst:"", src);
+		{
+			err = FZip::DecompressFile( file1, file2, overwrite );
+			if( err )
+				FZip::zerr(err);
+			else
+				fprintf(stderr, "decompress %s from %s success.\n", file2 ? file2:"", file1);
+		}
 	}
-}
-
-void lock_test(int argc, char * argv[])
-{
-
-	const char * file = argv[1];
-	// const char * msg = argv[3];
-	// int fd = open(argv[1], O_RDWR);
-	int fd = 0;
-	// 如果文件不存在，则创建文件；
-	if( -1 == (fd = open(file, O_RDONLY|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR | S_IRGRP | S_IROTH)) )
-		fd = open(file, O_RDONLY);
-	printf("opened\n");
-	// 锁定文件成功
-	int operation = 0, waitSnds = atoi(argv[2]);
-	// FZip::AdvisoryLock * locker=0;
-	operation = ( waitSnds < 10 ) ? LOCK_EX : LOCK_SH;
-	auto locker = new FZip::Writer(file);
-	// if( -1 != flock(fd, operation ) )
-	if( -1 != locker->Lock(operation | LOCK_NB) )
-	{
-		printf("lock success\n");
-		sleep( waitSnds );
-		// FILE * fp = 0;
-		// if( (fp = fopen(file, "w")) )
-		// {
-			// fprintf(fp, "%s\n", msg);
-			// printf("write ok\n");
-			// fclose(fp);
-		// }
-		// else
-			// printf("write failed\n");
-	}
-	else
-		printf("lock failed\n");
-	// close(fd);
-	locker->Unlock();
-	// delete locker;
-	printf("unlock\n");
-	sleep(waitSnds);
-	printf("return\n");
 }
 
 int main(int argc, char * argv[])
 {
-	// lock_test(argc, argv);
 	fzip(argc, argv);
 	return 0;
 }
